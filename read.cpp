@@ -21,7 +21,7 @@ double getCost(int x1, int y1, int x2, int y2) {
 
 DataOP readFile() {
     DataOP data;
-    ifstream file("att48FSTCII_q1_g1_p2.pop");
+    ifstream file("./instancias/quality/instances/berlin52FSTCII_q2_g4_p05.pop");
     string line;
 
     if (!file.is_open()) {

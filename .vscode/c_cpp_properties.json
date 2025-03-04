@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "/home/josue/CPLEX_Studio129/cplex/include",
+                "/home/josue/CPLEX_Studio129/concert/include",
+                "${workspaceFolder}/**"
+            ],
+            "defines": ["IL_STD"],
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c11",
+            "cppStandard": "c++11"
+        }
+    ],
+    "version": 4
+}

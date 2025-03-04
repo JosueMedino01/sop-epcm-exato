@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Compilar CPLEX",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "orienteering-problem-exact.cpp",
+                "-std=c++11",
+                "-I/home/josue/CPLEX_Studio129/cplex/include",
+                "-I/home/josue/CPLEX_Studio129/concert/include",
+                "-L/home/josue/CPLEX_Studio129/cplex/lib/x86-64_linux/static_pic",
+                "-L/home/josue/CPLEX_Studio129/concert/lib/x86-64_linux/static_pic",
+                "-DIL_STD",
+                "-lilocplex",
+                "-lconcert",
+                "-lcplex",
+                "-lm",
+                "-o", "a.out"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"]
+        }
+    ]
+}
