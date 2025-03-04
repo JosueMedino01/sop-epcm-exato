@@ -62,6 +62,16 @@ DataOP readFile() {
                 }
             }
         } 
+        else if(key == "EDGE_WEIGHT_SECTION") {
+            for (int i = 0; i < data.nCustomers; i++) {
+                for (int j = i + 1; j < data.nCustomers; j++) {
+                    int cost;
+                    file >> cost;
+                    data.cost[i][j] = cost;
+                    data.cost[j][i] = cost;
+                }
+            }
+        }
         else if (key == "NODE_PRIZE_PROBABILITY_SECTION") {
             for (int i = 0; i < data.nCustomers; i++) {   
                 int id, prize;
