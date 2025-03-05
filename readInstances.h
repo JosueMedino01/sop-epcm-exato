@@ -21,9 +21,9 @@ namespace readInstances {
         return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
     }
 
-    DataOP readFile(string filename) {
+    DataOP readFile(string path) {
         DataOP data;
-        ifstream file("./instancias/quality/instances/" + filename);
+        ifstream file(path);
         string line;
 
         if (!file.is_open()) {
