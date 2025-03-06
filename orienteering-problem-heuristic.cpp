@@ -52,10 +52,7 @@ Tour k_attractiveness_random_insertion(readInstances::DataOP data) {
 
     srand(time(0));
     int it = 0;
-    while (
-        tour.cost + data.cost[tour.tour.back()][0] < data.deadline && 
-        it < (n - tour.tour.size()) 
-    ) 
+    while (it < (n - tour.tour.size())) 
     {
         it++;
         int last = tour.tour.back();  
@@ -63,7 +60,7 @@ Tour k_attractiveness_random_insertion(readInstances::DataOP data) {
 
         for (int i = 0; i < n; i++) 
         {
-            if (!visited[i] && tour.cost + data.cost[last][i] + data.cost[i][0] < data.deadline) 
+            if (!visited[i]) 
             {
                 int attraction = partialObjecFunc(data, last, i);
                 Candidate newCandidate = {attraction, i};
@@ -124,6 +121,40 @@ pair<Tour, pair<int, int>> two_opt (Tour tour, Tour bestTour, readInstances::Dat
     return {tour, bestMove};
 }
 
+Tour selectFeasibleTour(Tour tour, readInstances::DataOP data) {
+    while (tour.cost > data.deadline && tour.tour.size() > 2) {
+        int worstCustomer = -1;
+        double worstRatio = INFINITY; 
+
+        for (int i = 1; i < tour.tour.size() - 1; i++) {
+            int prev = tour.tour[i - 1];
+            int curr = tour.tour[i];
+            int next = tour.tour[i + 1];
+
+            double costRemoved = data.cost[prev][curr] + data.cost[curr][next];
+            double costAdded = data.cost[prev][next];
+            double deltaCost = costAdded - costRemoved;
+
+            double ratio = deltaCost / data.prize[curr] ;
+
+            if (ratio < worstRatio) {
+                worstRatio = ratio;
+                worstCustomer = i;
+            }
+        }
+
+        if (worstCustomer != -1) {
+            int prev = tour.tour[worstCustomer - 1];
+            int next = tour.tour[worstCustomer + 1];
+            tour.cost -= data.cost[prev][tour.tour[worstCustomer]] + data.cost[tour.tour[worstCustomer]][next];
+            tour.cost += data.cost[prev][next];
+            tour.prize -= data.prize[tour.tour[worstCustomer]];
+            tour.tour.erase(tour.tour.begin() + worstCustomer);
+        }
+    }
+    return tour;
+}
+
 Tour tabuSearch(Tour s0, readInstances::DataOP data) 
 {
     vector<vector<int>> tabuList(data.nCustomers, vector<int>(data.nCustomers, 0));
@@ -170,7 +201,7 @@ void printData(Tour tour) {
  
 int main() 
 {  
-    readInstances::DataOP data = readInstances::readFile("./instancias/quality/instances/berlin52FSTCII_q2_g4_p05.pop");
+    readInstances::DataOP data = readInstances::readFile("./instancias/quality/instances/berlin52FSTCII_q2_g4_p05_r10_s10_rs5.pop");
     
     ofstream outFile("cost_matrix.txt");
     for (int i = 0; i < data.nCustomers; ++i) {
@@ -182,15 +213,19 @@ int main()
 
     Tour initialSolution = k_attractiveness_random_insertion(data);
 
-    cout << "Initial Solution: " << endl;
+    cout << "Initial tour complete: " << endl;
     printData(initialSolution);
 
     Tour bestSolution = tabuSearch(initialSolution, data);
 
 
-    cout << "Best solution Solution: "<< endl;
+    cout << "Best complete tour: "<< endl;
     printData(bestSolution);
     
+    Tour feasibleTour = selectFeasibleTour(bestSolution, data);
+    cout << "Feasible tour: " << endl;
+    printData(feasibleTour);
 
+    
     return 0;
 }
