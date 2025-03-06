@@ -20,3 +20,11 @@ read:
 	g++ read.cpp -o read.out
 	./read.out
 	rm -f *.o read.out
+
+heuristic:
+	g++ orienteering-problem-heuristic.cpp -o heuristic.out
+	./heuristic.out
+	rm -f *.o heuristic.out
+
+heuristic-bug:
+	g++ orienteering-problem-heuristic.cpp -g -o a.out

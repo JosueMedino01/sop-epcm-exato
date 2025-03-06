@@ -12,7 +12,7 @@ namespace readInstances {
     struct DataOP {
         int nCustomers;
         vector<int> prize;
-        vector<vector<int>> cost;
+        vector<vector<double>> cost;
         int deadline;
         vector<double> probability;
     };
@@ -41,7 +41,7 @@ namespace readInstances {
 
             if (key == "DIMENSION") {
                 data.nCustomers = value;
-                data.cost.resize(data.nCustomers, vector<int>(data.nCustomers, 0));
+                data.cost.resize(data.nCustomers, vector<double>(data.nCustomers, 0));
                 data.probability.resize(data.nCustomers, 0.0);
                 data.prize.resize(data.nCustomers, 0);
             }
