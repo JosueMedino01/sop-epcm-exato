@@ -23,8 +23,8 @@ read:
 
 heuristic:
 	g++ orienteering-problem-heuristic.cpp -o heuristic.out
-	./heuristic.out
-	rm -f *.o heuristic.out
+	time ./heuristic.out
+	
 
 heuristic-bug:
 	g++ orienteering-problem-heuristic.cpp -g -o a.out

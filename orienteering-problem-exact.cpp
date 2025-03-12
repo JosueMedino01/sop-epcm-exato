@@ -46,7 +46,7 @@ int main() {
         IloExpr lastNodeSum(env);
         for (int i = 0; i < data.nCustomers; i++)
         {
-            lastNodeSum += Xij[i][data.nCustomers-1];
+            lastNodeSum += Xij[i][0];
         }
         orienteeringProblem.add(lastNodeSum == 1);
 
