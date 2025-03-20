@@ -5,7 +5,7 @@
 using namespace std;
  
 int main() {  
-    readInstances::DataOP data = readInstances::readFile("./instancias/quality/instances/berlin52FSTCII_q2_g4_p05.pop");
+    readInstances::DataOP data = readInstances::readFile("./instancias/quality/instances/berlin52FSTCII_q2_g4_p05_r10_s10_rs5.pop");
 
     IloEnv env;
    
@@ -13,6 +13,7 @@ int main() {
     {
         IloModel orienteeringProblem(env, "Orienteering Problem");
         IloCplex cplex(orienteeringProblem);
+        cplex.setParam(IloCplex::Param::TimeLimit, 300);
 
         /* Variáveis de decisão */
         IloArray<IloIntVarArray> Xij(env, data.nCustomers);
@@ -28,7 +29,7 @@ int main() {
         {
             for (int j = 0; j < data.nCustomers; j++)
             {
-               objectiveFunction += Xij[i][j] * data.prize[j]; 
+               objectiveFunction += Xij[i][j] * data.prize[j] - Xij[i][j] * data.cost[i][j] * 0.0001; 
             }
         }
         
@@ -116,20 +117,20 @@ int main() {
         cout << "Solution status: " << cplex.getStatus() << endl;
         cout << "Objective value: " << cplex.getObjValue() << endl;
         
-        int currCustomer = 0, i = 0;
-        string path = "0";
-        while (i < data.nCustomers)
-        {
-           if(cplex.getValue(Xij[currCustomer][i]) == 1)
-           {
-               path += " -> " + to_string(i);
-               currCustomer = i;
-               i = -1;
-           }
-           i++;
+        ofstream outFile("matriz_Xij.txt");
+        if (!outFile) {
+            cerr << "Erro ao abrir o arquivo para escrita!" << endl;
+        } else {
+            outFile << "Matriz Xij:\n";
+            for (int i = 0; i < data.nCustomers; i++) {
+                for (int j = 0; j < data.nCustomers; j++) {
+                    outFile << cplex.getValue(Xij[i][j]) << " ";
+                }
+                outFile << "\n";
+            }
+            outFile.close();  // Fecha o arquivo após a escrita
+            cout << "Matriz salva em 'matriz_Xij.txt'." << endl;
         }
-
-        cout << "Path: " << path << endl;
         
 
     }
