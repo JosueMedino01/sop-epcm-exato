@@ -217,13 +217,13 @@ pair<Tour, pair<int, int>> insertChange(Tour tour, vector<int> &notVisited, vect
 }
 
 
-Tour tabuSearch(Tour initalSoluction, vector<int> notVisited, readInstances::DataOP data) 
-{
+Tour tabuSearch(readInstances::DataOP data) 
+{  
     vector<vector<int>> tabuList(data.nCustomers, vector<int>(data.nCustomers, 0));
     
-    
-    Tour currSolution = initalSoluction, bestSolution = initalSoluction;
-   
+    pair<Tour, vector<int>> customers = k_attractiveness_random_insertion(data);
+    Tour currSolution = customers.first, bestSolution = customers.first;
+    vector<int> notVisited = customers.second;
    
     cout << "Initial solution: " << endl;
     printData(currSolution, notVisited);
@@ -267,39 +267,13 @@ Tour tabuSearch(Tour initalSoluction, vector<int> notVisited, readInstances::Dat
             bestIter = iter;
         }
     }
-    /* cout << "Best complete tour: "<< endl;
-    printData(bestSolution, notVisited); */
+
     return bestSolution;
 }
 
-Tour vns(readInstances::DataOP data) {
-    pair<Tour, vector<int>> customers = k_attractiveness_random_insertion(data);
-    int r = 3;
+Tour ILS(readInstances::DataOP data) {
 
-    while (true) {
-        int k = 1;
-        while (k <= r)
-        {
-           switch (k)
-           {
-            case 1:
-                /*  */
-            break;
-           
-            case 2:
-                /*  */
-            break;
-            case 3:
-                /*  */
-            break;   
-           }
-
-
-
-
-        }
-        
-    }
+    
 }
 
 
@@ -308,25 +282,10 @@ int main()
 {  
     readInstances::DataOP data = readInstances::readFile("./instancias/quality/instances/berlin52FSTCII_q2_g4_p40_r20_s20_rs15.pop");
     
-    Tour bestSolution = vns(data);
+    Tour bestSolution = ILS(data);
     cout << "Best solution: " << endl;
     printData(bestSolution, {});
 
 
     return 0;
 }
-
-/* 
-Seja s0 uma solução incial e r o número de estrutuda de vizinhança 
-S <- s0
-enquanto (critério de parada não satisfeito) faça
-	k <- 1
-	enquanto (k <= r) faça
-		Gere um vizinho qualquer s`∈ N(k)(s)
-		s`` <- BuscaLocal(s`)
-		se (f(s`` > f(s))
-			entao s <- s``; k <- 1;
-		senao k <- k+1
-	fim-enquanto
-fim-enquanto
-retorne s; */
