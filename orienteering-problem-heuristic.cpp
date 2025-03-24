@@ -5,7 +5,7 @@
 using namespace std;
 
 double C = 0.001;
-int K = 2, TABU_TENURE = 10, MAX_ITER = 1000;
+int K = 52, TABU_TENURE = 50, MAX_ITER = 1000;
 
 struct Tour
 {
@@ -17,6 +17,11 @@ struct Tour
 struct Candidate {
     int attraction;
     int id;
+};
+
+struct Customers {
+    Tour featsibleTour;
+    vector<int> notVisited;
 };
 
 void decrementTabuList(vector<vector<int>> &tabuList) {
@@ -39,21 +44,8 @@ bool isTabu(int i, int j, vector<vector<int>> &tabuList) {
 }
 
 
-void printData(Tour tour, vector<int> notVisited) {
-    cout << "Tour: " << endl;
-    for (int i = 0; i < tour.tour.size(); i++)
-    {
-        cout << tour.tour[i] << " ";
-    }
-    cout<< endl<<  "Not viseted: " << endl;
-    for (int i = 0; i < notVisited.size(); i++)
-    {
-        cout << notVisited[i] << " ";
-    }
-    cout << endl;
-    cout << "Cost: " << tour.cost << endl;
-    cout << "Prize: " << tour.prize << endl << endl;
-}
+
+
 
 double partialObjecFunc (readInstances::DataOP data, int i, int j) {
     return data.prize[j] - C * data.cost[i][j];
@@ -63,31 +55,30 @@ double objectiveFunction(double sumPrize, double sumCost) {
     return sumPrize - C * sumCost;
 }
 
-Tour extractFeasibleTour(Tour completeTour, readInstances::DataOP data) {
-    Tour feasibleTour;
-    feasibleTour.tour.push_back(0);
-    feasibleTour.cost = 0;
-    feasibleTour.prize = 0;
+void printData(Tour tour, vector<int> notVisited) {
+    ofstream outFile("solution_log.txt", ios::app); // Abre o arquivo em modo append
 
-    int i = 1;
-    while (i < data.nCustomers && 
-        (feasibleTour.cost + data.cost[completeTour.tour[i - 1]][completeTour.tour[i]] + data.cost[completeTour.tour[i]][0]) <= data.deadline) 
-    {
-        feasibleTour.tour.push_back(completeTour.tour[i]);
-        feasibleTour.cost += data.cost[completeTour.tour[i - 1]][completeTour.tour[i]];
-        feasibleTour.prize += data.prize[completeTour.tour[i]];
-        i++;
+    if (!outFile) {
+        cerr << "Erro ao abrir o arquivo para escrita!" << endl;
+        return;
+    }
+
+    outFile << "Tour: ";
+    for (int i = 0; i < tour.tour.size(); i++) {
+        outFile << tour.tour[i] << " ";
     }
     
+    outFile << "\nNot visited: ";
+    for (int i = 0; i < notVisited.size(); i++) {
+        outFile << notVisited[i] << " ";
+    }
 
-    feasibleTour.cost += data.cost[feasibleTour.tour.back()][0];
-    feasibleTour.tour.push_back(0);
+    outFile << "\nCost: " << tour.cost;
+    outFile << "\nPrize: " << tour.prize;
+    outFile << "\nObjetive Function: " << objectiveFunction(tour.prize, tour.cost) << "\n\n";
 
-    return feasibleTour;
+    outFile.close(); // Fecha o arquivo corretamente
 }
-
-
-
 
 pair<Tour, vector<int>> k_attractiveness_random_insertion(readInstances::DataOP data) { 
     int n = data.nCustomers;
@@ -97,9 +88,7 @@ pair<Tour, vector<int>> k_attractiveness_random_insertion(readInstances::DataOP 
     vector<bool> visited(n, false);
     visited[0] = true;
 
-    srand(time(0)); /* add parametro */
-
-    while (feasibleTour.tour.size() < n && feasibleTour.cost + data.cost[feasibleTour.tour.back()][0] <= data.deadline) 
+    while (feasibleTour.tour.size() < n &&(feasibleTour.cost + data.cost[feasibleTour.tour.back()][0] <= data.deadline)) 
     {
         int last = feasibleTour.tour.back();  
         vector<Candidate> candidateList;  
@@ -121,8 +110,14 @@ pair<Tour, vector<int>> k_attractiveness_random_insertion(readInstances::DataOP 
         );
         
         if (candidateList.size() > 0) {
-            int k = min(K, (int)candidateList.size() - 1);
-            int nextCustormer = candidateList[k].id;
+            int k = min(K, (int)candidateList.size());
+            if (k == 0) break;  // Avoid invalid access
+            int randomNumber = rand() % k;
+            int nextCustormer = candidateList[randomNumber].id;
+
+            if (feasibleTour.cost + data.cost[last][nextCustormer] + data.cost[nextCustormer][0] > data.deadline) {
+                break; // Impede que o novo nó ultrapasse o deadline
+            }
 
             feasibleTour.tour.push_back(nextCustormer);
             feasibleTour.cost += data.cost[last][nextCustormer];
@@ -130,6 +125,15 @@ pair<Tour, vector<int>> k_attractiveness_random_insertion(readInstances::DataOP 
 
             visited[nextCustormer] = true;
         };
+    }
+
+    if(feasibleTour.cost > data.deadline) {
+        int removed = feasibleTour.tour.back();
+        feasibleTour.tour.pop_back();
+        feasibleTour.cost -= data.cost[feasibleTour.tour.back()][removed];
+        feasibleTour.prize -= data.prize[removed];
+
+        visited[removed] = false;
     }
 
     feasibleTour.cost += data.cost[feasibleTour.tour.back()][0];
@@ -191,12 +195,14 @@ pair<Tour, pair<int, int>> insertChange(Tour tour, vector<int> &notVisited, vect
             int addedNode = notVisited[k];
 
             double oldEdges = data.cost[tour.tour[j - 1]][tour.tour[j]];
-            double newEdges = data.cost[tour.tour[j - 1]][addedNode];
+            double newEdges = data.cost[tour.tour[j - 1]][addedNode] + data.cost[addedNode][tour.tour[j]]; 
             double newCost = tour.cost - oldEdges + newEdges;
 
             int newPrize = tour.prize + data.prize[addedNode];
 
-            if (newCost <= data.deadline && !isTabu(addedNode, addedNode, tabuList)) {
+            if (newCost <= data.deadline && 
+                objectiveFunction(newPrize, newCost) > objectiveFunction(bestTour.prize, bestTour.cost) && 
+                !isTabu(tour.tour[j], addedNode, tabuList)) {
                 bestTour.tour = tour.tour;
                 bestTour.tour.insert(bestTour.tour.begin() + j, addedNode);
                 bestTour.cost = newCost;
@@ -206,7 +212,7 @@ pair<Tour, pair<int, int>> insertChange(Tour tour, vector<int> &notVisited, vect
                 bestNotVisited = notVisited;
                 bestNotVisited.erase(bestNotVisited.begin() + k);
 
-                move = {addedNode, addedNode};
+                move = {tour.tour[j], addedNode};
             }
         }
     }
@@ -217,42 +223,34 @@ pair<Tour, pair<int, int>> insertChange(Tour tour, vector<int> &notVisited, vect
 }
 
 
-Tour tabuSearch(readInstances::DataOP data) 
+pair<Tour, vector<int>> tabuSearch(readInstances::DataOP data, pair<Tour, vector<int>> customers) 
 {  
     vector<vector<int>> tabuList(data.nCustomers, vector<int>(data.nCustomers, 0));
     
-    pair<Tour, vector<int>> customers = k_attractiveness_random_insertion(data);
+
     Tour currSolution = customers.first, bestSolution = customers.first;
     vector<int> notVisited = customers.second;
    
-    cout << "Initial solution: " << endl;
-    printData(currSolution, notVisited);
     int iter = 0, bestIter = 0;
 
     while (iter - bestIter <= MAX_ITER) 
     {   
-        cout <<  "Iteração " << iter << "bestIter " << bestIter << " - "<<  iter - bestIter <<" SEM MELHORAR" << endl;
         iter++;
         pair<Tour, pair<int, int>> response = exchangeMove(currSolution, notVisited, tabuList, data);
         pair<int, int> moved = response.second;
         currSolution = response.first;
-        
-        cout << "moved " << moved.first << " " << moved.second << endl;
-        printData(currSolution, notVisited);
       
 
-        if (moved.first != -1)
+        if (moved.first == -1)
         {
             pair<Tour, pair<int, int>> dataInsert = insertChange(currSolution, notVisited, tabuList, data);
             moved = dataInsert.second;
             currSolution = dataInsert.first;
-            cout << "moved " << moved.first << " " << moved.second << endl;
-            printData(currSolution, notVisited);
         }
 
-        if (moved.first != -1) {
+        if (moved.first == -1) {
             cout << "Não ocorreu melhora" << endl;
-            return bestSolution;
+            return {bestSolution, notVisited};
         }
 
         decrementTabuList(tabuList);
@@ -268,24 +266,55 @@ Tour tabuSearch(readInstances::DataOP data)
         }
     }
 
-    return bestSolution;
+    return {bestSolution, notVisited};
 }
 
-Tour ILS(readInstances::DataOP data) {
+pair<Tour, vector<int>> ILS(readInstances::DataOP data) {
+    pair<Tour, vector<int>> customers = k_attractiveness_random_insertion(data);
+    pair<Tour, vector<int>> bestSolution = tabuSearch(data, customers);
 
-    
+    int MAX_NOT_IMPROVIMENT = 1000, iter = 0;
+
+    while (iter < MAX_NOT_IMPROVIMENT)
+    {   
+        pair<Tour, vector<int>> pertubSolutin = k_attractiveness_random_insertion(data);
+        pair<Tour, vector<int>> newSolution = tabuSearch(data, pertubSolutin);
+
+        if(objectiveFunction(newSolution.first.prize, newSolution.first.cost) > objectiveFunction(bestSolution.first.prize, bestSolution.first.cost)) 
+        {  
+            bestSolution = newSolution;
+            iter = 0;
+        }
+
+        iter++;
+    }
+
+    return bestSolution;
+
 }
 
 
  
 int main() 
 {  
+    srand(time(0)); /* add parametro */
     readInstances::DataOP data = readInstances::readFile("./instancias/quality/instances/berlin52FSTCII_q2_g4_p40_r20_s20_rs15.pop");
     
-    Tour bestSolution = ILS(data);
+    /* pair<Tour, vector<int>> bestSolution = ILS(data);
     cout << "Best solution: " << endl;
-    printData(bestSolution, {});
+    printData(bestSolution.first, bestSolution.second); */
+
+   /*  pair<Tour, vector<int>> customers = k_attractiveness_random_insertion(data);
+    cout << "Solução inicial" << endl;
+    printData(customers.first, customers.second);
 
 
+    pair<Tour, vector<int>> localSearch = tabuSearch(data, customers);
+    cout << "Best solution: " << endl;
+    printData(localSearch.first, localSearch.second); */
+
+    pair<Tour, vector<int>> customers = ILS(data);
+    cout << "Best solution: " << endl;
+    printData(customers.first, customers.second);
     return 0;
 }
