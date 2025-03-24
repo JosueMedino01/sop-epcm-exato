@@ -5,7 +5,7 @@
 using namespace std;
  
 int main() {  
-    readInstances::DataOP data = readInstances::readFile("./instancias/quality/instances/berlin52FSTCII_q2_g4_p05_r10_s10_rs5.pop");
+    readInstances::DataOP data = readInstances::readFile("./instancias/quality/instances/berlin52FSTCII_q2_g4_p40_r20_s20_rs15.pop");
 
     IloEnv env;
    
@@ -13,7 +13,7 @@ int main() {
     {
         IloModel orienteeringProblem(env, "Orienteering Problem");
         IloCplex cplex(orienteeringProblem);
-        cplex.setParam(IloCplex::Param::TimeLimit, 300);
+        cplex.setParam(IloCplex::Param::TimeLimit, 1000);
 
         /* Variáveis de decisão */
         IloArray<IloIntVarArray> Xij(env, data.nCustomers);
