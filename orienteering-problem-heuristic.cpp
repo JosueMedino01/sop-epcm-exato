@@ -1,11 +1,12 @@
 #include <iostream>
 #include "readInstances.h"
 #include <algorithm>
+#include <string.h>
 
 using namespace std;
 
-double C = 0.001;
-int K = 52, TABU_TENURE = 50, MAX_ITER = 1000;
+double C;
+int K, TABU_TENURE, MAX_ITER_TABU, MAX_NOT_IMPROVIMENT;
 
 struct Tour
 {
@@ -233,7 +234,7 @@ pair<Tour, vector<int>> tabuSearch(readInstances::DataOP data, pair<Tour, vector
    
     int iter = 0, bestIter = 0;
 
-    while (iter - bestIter <= MAX_ITER) 
+    while (iter - bestIter <= MAX_ITER_TABU) 
     {   
         iter++;
         pair<Tour, pair<int, int>> response = exchangeMove(currSolution, notVisited, tabuList, data);
@@ -273,17 +274,19 @@ pair<Tour, vector<int>> ILS(readInstances::DataOP data) {
     pair<Tour, vector<int>> customers = k_attractiveness_random_insertion(data);
     pair<Tour, vector<int>> bestSolution = tabuSearch(data, customers);
 
-    int MAX_NOT_IMPROVIMENT = 1000, iter = 0;
+    int iter = 0;
 
     while (iter < MAX_NOT_IMPROVIMENT)
     {   
         pair<Tour, vector<int>> pertubSolutin = k_attractiveness_random_insertion(data);
         pair<Tour, vector<int>> newSolution = tabuSearch(data, pertubSolutin);
-
+       
+        
         if(objectiveFunction(newSolution.first.prize, newSolution.first.cost) > objectiveFunction(bestSolution.first.prize, bestSolution.first.cost)) 
         {  
             bestSolution = newSolution;
             iter = 0;
+            printData(newSolution.first, newSolution.second);
         }
 
         iter++;
@@ -295,23 +298,45 @@ pair<Tour, vector<int>> ILS(readInstances::DataOP data) {
 
 
  
-int main() 
+int main(int argc, char *argv[]) 
 {  
-    srand(time(0)); /* add parametro */
-    readInstances::DataOP data = readInstances::readFile("./instancias/quality/instances/berlin52FSTCII_q2_g4_p40_r20_s20_rs15.pop");
-    
-    /* pair<Tour, vector<int>> bestSolution = ILS(data);
-    cout << "Best solution: " << endl;
-    printData(bestSolution.first, bestSolution.second); */
+    string filename = "";
+    int seed;
 
-   /*  pair<Tour, vector<int>> customers = k_attractiveness_random_insertion(data);
-    cout << "Solução inicial" << endl;
-    printData(customers.first, customers.second);
+    for (int i = 0; i < argc; i++)
+    {
+        
+        if (!strcmp(argv[i], "-f"))
+        {
+            filename = argv[i + 1];
+        }
+        else if (!strcmp(argv[i], "-C"))
+        {
+            C = atof(argv[i + 1]);
+        }
+        else if (!strcmp(argv[i], "-K"))
+        {
+            K = atoi(argv[i + 1]);
+        }
+        else if (!strcmp(argv[i], "-T"))
+        {
+            TABU_TENURE = atoi(argv[i + 1]);
+        }
+        else if (!strcmp(argv[i], "-maxIterTabu"))
+        {
+            MAX_ITER_TABU = atoi(argv[i + 1]);
+        }
+        else if (!strcmp(argv[i], "-maxNotImproviment"))
+        {
+            MAX_NOT_IMPROVIMENT = atoi(argv[i + 1]);
+        } else if (!strcmp(argv[i], "-seed")) {
+            seed = atoi(argv[i + 1]);
+        }
+        
+    }
 
-
-    pair<Tour, vector<int>> localSearch = tabuSearch(data, customers);
-    cout << "Best solution: " << endl;
-    printData(localSearch.first, localSearch.second); */
+    srand(seed); 
+    readInstances::DataOP data = readInstances::readFile(filename);
 
     pair<Tour, vector<int>> customers = ILS(data);
     cout << "Best solution: " << endl;
