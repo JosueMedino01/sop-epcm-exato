@@ -13,7 +13,7 @@ int main() {
     {
         IloModel orienteeringProblem(env, "Orienteering Problem");
         IloCplex cplex(orienteeringProblem);
-        cplex.setParam(IloCplex::Param::TimeLimit, 1000);
+        /* cplex.setParam(IloCplex::Param::TimeLimit, 5000); */
 
         /* Variáveis de decisão */
         IloArray<IloIntVarArray> Xij(env, data.nCustomers);
