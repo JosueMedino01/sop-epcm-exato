@@ -25,23 +25,13 @@ struct Customers {
     vector<int> notVisited;
 };
 
-void decrementTabuList(vector<vector<int>> &tabuList) {
-    for (int i = 0; i < tabuList[0].size(); ++i) {
-        for (int j = 0; j < tabuList[0].size(); ++j) {
-            if (tabuList[i][j] > 0) {
-                tabuList[i][j]--;
-            }
-        }
-    }
+void addTabu(int i, int j, vector<vector<int>> &tabuList, int iter) {
+    tabuList[i][j] = iter;
+    tabuList[j][i] = iter;
 }
 
-void addTabu(int i, int j, vector<vector<int>> &tabuList) {
-    tabuList[i][j] = TABU_TENURE;
-    tabuList[j][i] = TABU_TENURE;
-}
-
-bool isTabu(int i, int j, vector<vector<int>> &tabuList) {  
-    return tabuList[i][j] > 0;
+bool isTabu(int i, int j, vector<vector<int>> &tabuList, int iter) {  
+    return iter - tabuList[i][j] < TABU_TENURE;
 }
 
 
@@ -151,7 +141,7 @@ pair<Tour, vector<int>> k_attractiveness_random_insertion(readInstances::DataOP 
     return {feasibleTour, notVisited};
 }
 
-pair<Tour, pair<int, int>> exchangeMove(Tour tour, vector<int> &notVisited, vector<vector<int>> &tabuList, readInstances::DataOP data) {
+pair<Tour, pair<int, int>> exchangeMove(Tour tour, vector<int> &notVisited, vector<vector<int>> &tabuList, readInstances::DataOP data, int iter) {
     Tour bestTour = tour;
     vector<int> bestNotVisited = notVisited;
     pair<int, int> move = {-1, -1};
@@ -167,7 +157,7 @@ pair<Tour, pair<int, int>> exchangeMove(Tour tour, vector<int> &notVisited, vect
 
             int newPrize = tour.prize + data.prize[addedNode] - data.prize[removedNode];
 
-            if (newCost <= data.deadline && objectiveFunction(newPrize, newCost) > objectiveFunction(bestTour.prize, bestTour.cost) && !isTabu(removedNode, addedNode, tabuList)) {
+            if (newCost <= data.deadline && objectiveFunction(newPrize, newCost) > objectiveFunction(bestTour.prize, bestTour.cost) && !isTabu(removedNode, addedNode, tabuList, iter)) {
                 bestTour.tour = tour.tour;
                 bestTour.tour[j] = addedNode; 
                 bestTour.cost = newCost;
@@ -186,7 +176,7 @@ pair<Tour, pair<int, int>> exchangeMove(Tour tour, vector<int> &notVisited, vect
     return {bestTour, move};
 }
 
-pair<Tour, pair<int, int>> insertChange(Tour tour, vector<int> &notVisited, vector<vector<int>> &tabuList, readInstances::DataOP data) {
+pair<Tour, pair<int, int>> insertChange(Tour tour, vector<int> &notVisited, vector<vector<int>> &tabuList, readInstances::DataOP data, int iter) {
     Tour bestTour = tour;
     vector<int> bestNotVisited = notVisited;
     pair<int, int> move = {-1, -1};
@@ -203,7 +193,7 @@ pair<Tour, pair<int, int>> insertChange(Tour tour, vector<int> &notVisited, vect
 
             if (newCost <= data.deadline && 
                 objectiveFunction(newPrize, newCost) > objectiveFunction(bestTour.prize, bestTour.cost) && 
-                !isTabu(tour.tour[j], addedNode, tabuList)) {
+                !isTabu(tour.tour[j], addedNode, tabuList, iter)) {
                 bestTour.tour = tour.tour;
                 bestTour.tour.insert(bestTour.tour.begin() + j, addedNode);
                 bestTour.cost = newCost;
@@ -224,6 +214,35 @@ pair<Tour, pair<int, int>> insertChange(Tour tour, vector<int> &notVisited, vect
 }
 
 
+pair<Tour, pair<int, int>> two_opt (Tour tour, Tour bestTour, readInstances::DataOP data, vector<vector<int>> &tabuList, int iter) {
+    double bestLocalCost = 0;
+    pair<int, int> bestMove = {-1, -1};
+
+    for (int i = 1  ; i < tour.tour.size(); i++) {
+        for (int j = i + 1; j < tour.tour.size() - 1; j++) {
+            double edgeRemoved  =  data.cost[tour.tour[i - 1]][tour.tour[i]] + data.cost[tour.tour[j]][tour.tour[j + 1]];
+            double edgeAdded = data.cost[tour.tour[i - 1]][tour.tour[j]] + data.cost[tour.tour[i]][tour.tour[j + 1]];
+            double newCost = tour.cost - edgeRemoved + edgeAdded;
+
+        
+
+            if (newCost < tour.cost && !isTabu(tour.tour[i], tour.tour[j], tabuList, iter))
+            {
+                bestMove = {i, j};
+                bestLocalCost = newCost;
+            }
+        }
+    }
+
+    
+    if (bestMove.first != -1 && bestMove.second != -1) {
+        reverse(tour.tour.begin() + bestMove.first, tour.tour.begin() + bestMove.second + 1);
+        tour.cost = bestLocalCost;
+    }
+
+    return {tour, bestMove};
+}
+
 pair<Tour, vector<int>> tabuSearch(readInstances::DataOP data, pair<Tour, vector<int>> customers) 
 {  
     vector<vector<int>> tabuList(data.nCustomers, vector<int>(data.nCustomers, 0));
@@ -232,53 +251,159 @@ pair<Tour, vector<int>> tabuSearch(readInstances::DataOP data, pair<Tour, vector
     Tour currSolution = customers.first, bestSolution = customers.first;
     vector<int> notVisited = customers.second;
    
-    int iter = 0, bestIter = 0;
+    int iter = 0, notImprovement = 0;
 
-    while (iter - bestIter <= MAX_ITER_TABU) 
-    {   
-        iter++;
-        pair<Tour, pair<int, int>> response = exchangeMove(currSolution, notVisited, tabuList, data);
+    while (iter <= MAX_ITER_TABU) 
+    {       
+        cout << "Iteração: " << iter << endl;
+ 
+        pair<Tour, pair<int, int>> response = exchangeMove(currSolution, notVisited, tabuList, data, iter);
         pair<int, int> moved = response.second;
         currSolution = response.first;
       
 
         if (moved.first == -1)
         {
-            pair<Tour, pair<int, int>> dataInsert = insertChange(currSolution, notVisited, tabuList, data);
+            pair<Tour, pair<int, int>> dataInsert = insertChange(currSolution, notVisited, tabuList, data, iter);
             moved = dataInsert.second;
             currSolution = dataInsert.first;
         }
 
-        if (moved.first == -1) {
-            cout << "Não ocorreu melhora" << endl;
-            return {bestSolution, notVisited};
+        if(moved.first == -1) {
+            pair<Tour, pair<int, int>> dataTwoOpt = two_opt(currSolution, bestSolution, data, tabuList, iter);
+            moved = dataTwoOpt.second;
+            currSolution = dataTwoOpt.first;
         }
 
-        decrementTabuList(tabuList);
+        if (moved.first == -1) notImprovement++;
+        else addTabu(moved.first, moved.second, tabuList, iter);
 
-        addTabu(moved.first, moved.second, tabuList);
-       
+        if(notImprovement == 100) return {bestSolution, notVisited};
         
     
         if(objectiveFunction(currSolution.prize, currSolution.cost) > objectiveFunction(bestSolution.prize, bestSolution.cost)) 
         {  
             bestSolution = currSolution;
-            bestIter = iter;
-        }
+        }       
+        iter++;
     }
 
     return {bestSolution, notVisited};
 }
 
+
+pair<Tour, vector<int>> doubleBridgeA (Tour feasibleTour, readInstances::DataOP data, vector<int> notVisited){
+    int cuts[4], n = feasibleTour.tour.size();
+    cout << "SIZE: " << n << endl;
+    int partSize = n / 4;
+
+    cuts[0] = 1 + rand() % partSize;      
+    cuts[1] = partSize + rand() % partSize;
+    cuts[2] = 2 * partSize + rand() % partSize;
+    cuts[3] = 3 * partSize + rand() % (n - 3 * partSize - 1); 
+
+    vector<int>& t = feasibleTour.tour;
+    reverse(t.begin() + cuts[0], t.begin() + cuts[1]); 
+    reverse(t.begin() + cuts[2], t.begin() + cuts[3]);
+
+    double added = data.cost[cuts[0]][cuts[2]-1] + data.cost[cuts[0] - 1][cuts[2]] + 
+                data.cost[cuts[1] - 1][cuts[3]] + data.cost[cuts[1]][cuts[3]-1];
+
+    double deleted = data.cost[cuts[0]][cuts[0] - 1] +  data.cost[cuts[1]][cuts[1] - 1] + 
+                data.cost[cuts[2]][cuts[2] - 1] +  data.cost[cuts[3]][cuts[3] - 1];
+
+    feasibleTour.cost = feasibleTour.cost + added - deleted;     
+
+    while (feasibleTour.cost + data.cost[feasibleTour.tour.back()][0] > data.deadline)
+    { 
+        int last = feasibleTour.tour.back();
+        feasibleTour.tour.pop_back();
+    
+        feasibleTour.cost -= data.cost[feasibleTour.tour.back()][last];
+        feasibleTour.prize -= data.prize[last];
+        
+        if(last != 0) 
+            notVisited.push_back(last);
+    }
+    
+    feasibleTour.cost += data.cost[feasibleTour.tour.back()][0];
+   
+    return {feasibleTour, notVisited};
+}
+
+pair<Tour, vector<int>> doubleBridge (Tour feasibleTour, readInstances::DataOP data, vector<int> notVisited){
+    int n = feasibleTour.tour.size();
+    if (n < 8) return {feasibleTour, notVisited}; // Tour muito pequeno para perturbação
+    
+    // Garantir que temos pelo menos 1 nó entre cada ponto de corte
+    int partSize = max(1, (n - 4) / 4);
+    
+    int cuts[4];
+    cuts[0] = 1 + rand() % partSize;
+    cuts[1] = cuts[0] + 1 + rand() % partSize;
+    cuts[2] = cuts[1] + 1 + rand() % partSize;
+    cuts[3] = cuts[2] + 1 + rand() % (n - cuts[2] - 2);
+
+    // Construir novo tour na ordem: A-D-C-B-E
+    vector<int> newTour;
+    // Parte A (0 até cuts[0])
+    newTour.insert(newTour.end(), feasibleTour.tour.begin(), feasibleTour.tour.begin() + cuts[0]);
+    // Parte D (cuts[3] até fim)
+    newTour.insert(newTour.end(), feasibleTour.tour.begin() + cuts[3], feasibleTour.tour.end());
+    // Parte C (cuts[2] até cuts[3])
+    newTour.insert(newTour.end(), feasibleTour.tour.begin() + cuts[2], feasibleTour.tour.begin() + cuts[3]);
+    // Parte B (cuts[1] até cuts[2])
+    newTour.insert(newTour.end(), feasibleTour.tour.begin() + cuts[1], feasibleTour.tour.begin() + cuts[2]);
+    // Parte E (cuts[0] até cuts[1])
+    newTour.insert(newTour.end(), feasibleTour.tour.begin() + cuts[0], feasibleTour.tour.begin() + cuts[1]);
+
+    // Recalcular o custo total (mais seguro que tentar ajustar)
+    double newCost = 0;
+    int newPrize = 0;
+    for (int i = 1; i < newTour.size(); i++) {
+        newCost += data.cost[newTour[i-1]][newTour[i]];
+    }
+    for (int i = 1; i < newTour.size()-1; i++) {
+        newPrize += data.prize[newTour[i]];
+    }
+
+    feasibleTour.tour = newTour;
+    feasibleTour.cost = newCost;
+    feasibleTour.prize = newPrize;
+
+    // Verificar deadline e remover nós se necessário
+    while (feasibleTour.cost + data.cost[feasibleTour.tour.back()][0] > data.deadline && feasibleTour.tour.size() > 2) {
+        int last = feasibleTour.tour.back();
+        feasibleTour.tour.pop_back();
+        feasibleTour.cost -= data.cost[feasibleTour.tour.back()][last];
+        if(last != 0) {
+            feasibleTour.prize -= data.prize[last];
+            notVisited.push_back(last);
+        }
+    }
+
+    feasibleTour.cost += data.cost[feasibleTour.tour.back()][0];
+    feasibleTour.tour.push_back(0); // Adiciona o nó de origem novamente
+    
+    return {feasibleTour, notVisited};
+}
 pair<Tour, vector<int>> ILS(readInstances::DataOP data) {
     pair<Tour, vector<int>> customers = k_attractiveness_random_insertion(data);
+   /*  cout << "solucao inicial" << endl;
+    printData(customers.first, customers.second); */
+  
     pair<Tour, vector<int>> bestSolution = tabuSearch(data, customers);
 
     int iter = 0;
 
     while (iter < MAX_NOT_IMPROVIMENT)
     {   
-        pair<Tour, vector<int>> pertubSolutin = k_attractiveness_random_insertion(data);
+        pair<Tour, vector<int>> pertubSolutin = doubleBridge(bestSolution.first, data, bestSolution.second);
+        printData(pertubSolutin.first, pertubSolutin.second);
+        cout << "pertubacao" << endl;
+        cout << "pertubacao cost" << pertubSolutin.first.cost << endl;
+        cout << "pertubacao prize" << pertubSolutin.first.prize << endl;
+       /*  exit(0); */
         pair<Tour, vector<int>> newSolution = tabuSearch(data, pertubSolutin);
        
         
@@ -286,12 +411,12 @@ pair<Tour, vector<int>> ILS(readInstances::DataOP data) {
         {  
             bestSolution = newSolution;
             iter = 0;
-            printData(newSolution.first, newSolution.second);
+           
         }
 
         iter++;
     }
-
+    printData(bestSolution.first, bestSolution.second);
     return bestSolution;
 
 }
@@ -339,7 +464,7 @@ int main(int argc, char *argv[])
     readInstances::DataOP data = readInstances::readFile(filename);
 
     pair<Tour, vector<int>> customers = ILS(data);
-    cout << "Best solution: " << endl;
-    printData(customers.first, customers.second);
+    /* cout << "Best solution: " << endl;
+    printData(customers.first, customers.second); */
     return 0;
 }
