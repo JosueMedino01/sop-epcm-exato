@@ -29,7 +29,7 @@ int main() {
         {
             for (int j = 0; j < data.nCustomers; j++)
             {
-               objectiveFunction += Xij[i][j] * data.prize[j] - Xij[i][j] * data.cost[i][j] * 0.0001; 
+               objectiveFunction += Xij[i][j] * data.prize[j] - Xij[i][j] * data.cost[i][j] * 0.001; 
             }
         }
         
@@ -114,9 +114,17 @@ int main() {
         }
 
         cplex.solve();
-        cout << "Solution status: " << cplex.getStatus() << endl;
-        cout << "Objective value: " << cplex.getObjValue() << endl;
-        
+
+        double totalPrize = cplex.getObjValue(); 
+        double totalCost = cplex.getValue(timeSum); 
+
+        objectiveFunction.end();
+        timeSum.end();
+
+        cout << "Total prize: " << totalPrize << endl;
+        cout << "Total cost: " << totalCost << endl;
+
+            
         ofstream outFile("matriz_Xij.txt");
         if (!outFile) {
             cerr << "Erro ao abrir o arquivo para escrita!" << endl;
