@@ -295,45 +295,6 @@ pair<Tour, vector<int>> tabuSearch(readInstances::DataOP data, pair<Tour, vector
 }
 
 
-pair<Tour, vector<int>> doubleBridgeA (Tour feasibleTour, readInstances::DataOP data, vector<int> notVisited){
-    int cuts[4], n = feasibleTour.tour.size();
-    cout << "SIZE: " << n << endl;
-    int partSize = n / 4;
-
-    cuts[0] = 1 + rand() % partSize;      
-    cuts[1] = partSize + rand() % partSize;
-    cuts[2] = 2 * partSize + rand() % partSize;
-    cuts[3] = 3 * partSize + rand() % (n - 3 * partSize - 1); 
-
-    vector<int>& t = feasibleTour.tour;
-    reverse(t.begin() + cuts[0], t.begin() + cuts[1]); 
-    reverse(t.begin() + cuts[2], t.begin() + cuts[3]);
-
-    double added = data.cost[cuts[0]][cuts[2]-1] + data.cost[cuts[0] - 1][cuts[2]] + 
-                data.cost[cuts[1] - 1][cuts[3]] + data.cost[cuts[1]][cuts[3]-1];
-
-    double deleted = data.cost[cuts[0]][cuts[0] - 1] +  data.cost[cuts[1]][cuts[1] - 1] + 
-                data.cost[cuts[2]][cuts[2] - 1] +  data.cost[cuts[3]][cuts[3] - 1];
-
-    feasibleTour.cost = feasibleTour.cost + added - deleted;     
-
-    while (feasibleTour.cost + data.cost[feasibleTour.tour.back()][0] > data.deadline)
-    { 
-        int last = feasibleTour.tour.back();
-        feasibleTour.tour.pop_back();
-    
-        feasibleTour.cost -= data.cost[feasibleTour.tour.back()][last];
-        feasibleTour.prize -= data.prize[last];
-        
-        if(last != 0) 
-            notVisited.push_back(last);
-    }
-    
-    feasibleTour.cost += data.cost[feasibleTour.tour.back()][0];
-   
-    return {feasibleTour, notVisited};
-}
-
 pair<Tour, vector<int>> doubleBridge (Tour feasibleTour, readInstances::DataOP data, vector<int> notVisited){
     feasibleTour.tour.pop_back(); 
     feasibleTour.cost -= data.cost[feasibleTour.tour.back()][0];
@@ -349,20 +310,15 @@ pair<Tour, vector<int>> doubleBridge (Tour feasibleTour, readInstances::DataOP d
     cuts[2] = cuts[1] + 1 + rand() % partSize;
     cuts[3] = cuts[2] + 1 + rand() % (n - cuts[2] - 2);
 
-    // Construir novo tour na ordem: A-D-C-B-E
+
     vector<int> newTour;
-    // Parte A (0 até cuts[0])
     newTour.insert(newTour.end(), feasibleTour.tour.begin(), feasibleTour.tour.begin() + cuts[0]);
-    // Parte D (cuts[3] até fim)
     newTour.insert(newTour.end(), feasibleTour.tour.begin() + cuts[3], feasibleTour.tour.end());
-    // Parte C (cuts[2] até cuts[3])
     newTour.insert(newTour.end(), feasibleTour.tour.begin() + cuts[2], feasibleTour.tour.begin() + cuts[3]);
-    // Parte B (cuts[1] até cuts[2])
     newTour.insert(newTour.end(), feasibleTour.tour.begin() + cuts[1], feasibleTour.tour.begin() + cuts[2]);
-    // Parte E (cuts[0] até cuts[1])
     newTour.insert(newTour.end(), feasibleTour.tour.begin() + cuts[0], feasibleTour.tour.begin() + cuts[1]);
 
-    // Recalcular o custo total (mais seguro que tentar ajustar)
+    // Custo -> forma errada, mas provisória
     double newCost = 0;
     int newPrize = 0;
     for (int i = 1; i < newTour.size(); i++) {
@@ -376,7 +332,7 @@ pair<Tour, vector<int>> doubleBridge (Tour feasibleTour, readInstances::DataOP d
     feasibleTour.cost = newCost;
     feasibleTour.prize = newPrize;
 
-    // Verificar deadline e remover nós se necessário
+    // Verificar deadline e remove clientes se necessário
     while (feasibleTour.cost + data.cost[feasibleTour.tour.back()][0] > data.deadline && feasibleTour.tour.size() > 2) {
         int last = feasibleTour.tour.back();
         feasibleTour.tour.pop_back();
@@ -388,10 +344,11 @@ pair<Tour, vector<int>> doubleBridge (Tour feasibleTour, readInstances::DataOP d
     }
 
     feasibleTour.cost += data.cost[feasibleTour.tour.back()][0];
-    feasibleTour.tour.push_back(0); // Adiciona o nó de origem novamente
+    feasibleTour.tour.push_back(0); 
     
     return {feasibleTour, notVisited};
 }
+
 pair<Tour, vector<int>> ILS(readInstances::DataOP data) {
     pair<Tour, vector<int>> customers = k_attractiveness_random_insertion(data);
     cout << "solucao inicial" << endl;
