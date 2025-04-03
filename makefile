@@ -23,7 +23,7 @@ read:
 
 heuristic:
 	g++ orienteering-problem-heuristic.cpp -o heuristic.out
-	time ./heuristic.out -f ./instancias/quality/instances/berlin52FSTCII_q2_g4_p40_r20_s20_rs15.pop -C 0.001 -K 2 -T 15 -maxNotImproviment 5000 -maxIterTabu 100 -seed 13
+	time ./heuristic.out -f ./instancias/quality/instances/berlin52FSTCII_q2_g4_p40_r20_s20_rs15.pop -C 0.001 -K 2 -T 10 -maxNotImproviment 1000 -maxIterTabu 100 -seed 13
 
 heuristic-bug:
 	g++ orienteering-problem-heuristic.cpp -g -o a.out
