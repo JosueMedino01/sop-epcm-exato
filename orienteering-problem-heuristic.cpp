@@ -7,6 +7,7 @@ using namespace std;
 
 double C;
 int K, TABU_TENURE, MAX_ITER_TABU, MAX_NOT_IMPROVIMENT;
+int contador = 0;
 
 struct Tour
 {
@@ -148,6 +149,9 @@ pair<Tour, pair<int, int>> exchangeMove(Tour tour, vector<int> &notVisited, vect
  
     for (size_t j = 1; j < tour.tour.size() - 1; j++) { 
         for (size_t k = 0; k < notVisited.size(); k++) { 
+
+            contador = contador + 1;
+            
             int removedNode = tour.tour[j];
             int addedNode = notVisited[k];
 
@@ -255,7 +259,6 @@ pair<Tour, vector<int>> tabuSearch(readInstances::DataOP data, pair<Tour, vector
 
     while (iter <= MAX_ITER_TABU) 
     {       
-        cout << "Iteração: " << iter << endl;
  
         pair<Tour, pair<int, int>> response = exchangeMove(currSolution, notVisited, tabuList, data, iter);
         pair<int, int> moved = response.second;
@@ -332,10 +335,12 @@ pair<Tour, vector<int>> doubleBridgeA (Tour feasibleTour, readInstances::DataOP 
 }
 
 pair<Tour, vector<int>> doubleBridge (Tour feasibleTour, readInstances::DataOP data, vector<int> notVisited){
-    int n = feasibleTour.tour.size();
-    if (n < 8) return {feasibleTour, notVisited}; // Tour muito pequeno para perturbação
+    feasibleTour.tour.pop_back(); 
+    feasibleTour.cost -= data.cost[feasibleTour.tour.back()][0];
     
-    // Garantir que temos pelo menos 1 nó entre cada ponto de corte
+    int n = feasibleTour.tour.size();
+    if (n < 8) return {feasibleTour, notVisited};
+    
     int partSize = max(1, (n - 4) / 4);
     
     int cuts[4];
@@ -389,8 +394,8 @@ pair<Tour, vector<int>> doubleBridge (Tour feasibleTour, readInstances::DataOP d
 }
 pair<Tour, vector<int>> ILS(readInstances::DataOP data) {
     pair<Tour, vector<int>> customers = k_attractiveness_random_insertion(data);
-   /*  cout << "solucao inicial" << endl;
-    printData(customers.first, customers.second); */
+    cout << "solucao inicial" << endl;
+    printData(customers.first, customers.second);
   
     pair<Tour, vector<int>> bestSolution = tabuSearch(data, customers);
 
@@ -399,17 +404,13 @@ pair<Tour, vector<int>> ILS(readInstances::DataOP data) {
     while (iter < MAX_NOT_IMPROVIMENT)
     {   
         pair<Tour, vector<int>> pertubSolutin = doubleBridge(bestSolution.first, data, bestSolution.second);
-        printData(pertubSolutin.first, pertubSolutin.second);
-        cout << "pertubacao" << endl;
-        cout << "pertubacao cost" << pertubSolutin.first.cost << endl;
-        cout << "pertubacao prize" << pertubSolutin.first.prize << endl;
-       /*  exit(0); */
         pair<Tour, vector<int>> newSolution = tabuSearch(data, pertubSolutin);
-       
         
         if(objectiveFunction(newSolution.first.prize, newSolution.first.cost) > objectiveFunction(bestSolution.first.prize, bestSolution.first.cost)) 
         {  
             bestSolution = newSolution;
+            printData(bestSolution.first, bestSolution.second);
+            cout << "Houve melhora solucao. Iteração: " << iter << endl;
             iter = 0;
            
         }
@@ -464,7 +465,6 @@ int main(int argc, char *argv[])
     readInstances::DataOP data = readInstances::readFile(filename);
 
     pair<Tour, vector<int>> customers = ILS(data);
-    /* cout << "Best solution: " << endl;
-    printData(customers.first, customers.second); */
+    cout << "contator " << contador << endl;
     return 0;
 }
