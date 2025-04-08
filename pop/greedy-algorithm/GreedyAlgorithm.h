@@ -11,7 +11,7 @@ class GreedyAlgorithm
         double costBenefit (InstanceData data, int i, int j, double C);
 
     public:
-        Customers kAttractivenessRandomInsertion(InstanceData data, int K, double C);
+        Customers kNeighborRandomInsertion(InstanceData data, int K, double C);
 
 };
 

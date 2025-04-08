@@ -1,38 +1,38 @@
 #include <iostream>
 #include <string.h>
 
-#include "greedy-algorithm/GreedyAlgorithm.h"
+/* #include "greedy-algorithm/GreedyAlgorithm.h" */
 #include "utils/Structs.h"
 #include "utils/ReadInstance.h"
-void printData(Tour tour, vector<int> notVisited) {
-    ofstream outFile("solution_log.txt", ios::app); // Abre o arquivo em modo append
+#include "iterated-local-search/IteratedLocalSearch.h"
 
-    if (!outFile) {
-        cerr << "Erro ao abrir o arquivo para escrita!" << endl;
-        return;
-    }
+void printData(Tour tour, vector<int> notVisited);
 
-    outFile << "Tour: ";
-    for (int i = 0; i < tour.path.size(); i++) {
-        outFile << tour.path[i] << " ";
-    }
-    
-    outFile << "\nNot visited: ";
-    for (int i = 0; i < notVisited.size(); i++) {
-        outFile << notVisited[i] << " ";
-    }
+void readArguments(int argc, char *argv[], string &filename, int &seed, 
+    int &K, double &C, int &TABU_TENURE, int &MAX_ITER_TABU, int &MAX_NOT_IMPROVIMENT
+);
 
-    outFile << "\nCost: " << tour.cost;
-    outFile << "\nPrize: " << tour.prize;
-    
-
-    outFile.close(); // Fecha o arquivo corretamente
-}
 int main(int argc, char *argv[]) {
     string filename = "";
     int seed, K, TABU_TENURE, MAX_ITER_TABU, MAX_NOT_IMPROVIMENT;
     double C;
 
+    readArguments(argc, argv, filename, seed, K, C, TABU_TENURE, MAX_ITER_TABU, MAX_NOT_IMPROVIMENT);
+
+    InstanceData data = readFile(filename); 
+    IteratedLocalSearch ils(MAX_NOT_IMPROVIMENT, K, C, seed);
+    ils.run(data, K, C);
+    printData(ils.bestSolution.feasibleTour, ils.bestSolution.notVisited);
+    
+    return 0;
+}
+
+
+
+
+void readArguments(int argc, char *argv[], string &filename, int &seed, 
+    int &K, double &C, int &TABU_TENURE, int &MAX_ITER_TABU, int &MAX_NOT_IMPROVIMENT) 
+{
     for (int i = 0; i < argc; i++)
     {
         if (!strcmp(argv[i], "-f"))
@@ -64,11 +64,29 @@ int main(int argc, char *argv[]) {
         
     }
 
-    srand(seed); 
+};
 
-    InstanceData data = readFile(filename);
-    GreedyAlgorithm greedy;
-    Customers customers = greedy.kAttractivenessRandomInsertion(data, K, C);
-    printData(customers.feasibleTour, customers.notVisited);
-    return 0;
+void printData(Tour tour, vector<int> notVisited) {
+    ofstream outFile("solution_log.txt", ios::app); // Abre o arquivo em modo append
+
+    if (!outFile) {
+        cerr << "Erro ao abrir o arquivo para escrita!" << endl;
+        return;
+    }
+
+    outFile << "Tour: ";
+    for (int i = 0; i < tour.path.size(); i++) {
+        outFile << tour.path[i] << " ";
+    }
+    
+    outFile << "\nNot visited: ";
+    for (int i = 0; i < notVisited.size(); i++) {
+        outFile << notVisited[i] << " ";
+    }
+
+    outFile << "\nCost: " << tour.cost;
+    outFile << "\nPrize: " << tour.prize;
+    
+
+    outFile.close(); // Fecha o arquivo corretamente
 }

@@ -7,7 +7,7 @@ double GreedyAlgorithm::costBenefit (InstanceData data, int i, int j, double C) 
     return data.prize[j] - C * data.cost[i][j];
 }
 
-Customers GreedyAlgorithm::kAttractivenessRandomInsertion(InstanceData data, int K, double C) {
+Customers GreedyAlgorithm::kNeighborRandomInsertion(InstanceData data, int K, double C) {
     int n = data.size;
 
 
