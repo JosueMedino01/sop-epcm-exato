@@ -10,10 +10,12 @@ class IteratedLocalSearch
     private:
         int MAX_NOT_IMPROVIMENT, K, SEED; 
         double C;
+        double objcFunc(double sumPrize, double sumCost);
+        void shiftOneZero(InstanceData &data, Customers &customers);
+        void swapOneOne(InstanceData &data, Customers &customers);
+        void localSearch(InstanceData &data, Customers &solution);
         
-        
-       
-        /* void localSearch(InstanceData &data, Customers &solution, double C);
+        /*
         void perturbation(InstanceData &data, Customers &solution, double C); */
     public:
         Customers bestSolution; 
