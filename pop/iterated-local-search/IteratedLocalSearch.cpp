@@ -16,7 +16,7 @@ IteratedLocalSearch::IteratedLocalSearch(int MXI, int K, double C, int SEED)
 
 void IteratedLocalSearch::run(InstanceData data, int K, double C) 
 {
-    /* Melhor Solução / Solução Inicial*/
+    /* Melhor Solução - Solução Inicial*/
     GreedyAlgorithm greedy; 
     this->bestSolution = greedy.kNeighborRandomInsertion(data, K, C); 
     this->printData(bestSolution.feasibleTour, bestSolution.notVisited, "SOLUCAO INICIAL");
@@ -41,6 +41,8 @@ void IteratedLocalSearch::run(InstanceData data, int K, double C)
         }
         
     }
+
+    this->printData(bestSolution.feasibleTour, bestSolution.notVisited, "Solucao Final");
 }
 
 double IteratedLocalSearch::objcFunc(double sumPrize, double sumCost) {
@@ -231,20 +233,15 @@ void  IteratedLocalSearch::localSearch(InstanceData &data, Customers &customers)
         switch(k) {
             case 1:
                 hasImprovement = this->shiftOneZero(data, customers);
-                if (hasImprovement) printData(customers.feasibleTour, customers.notVisited, "shiftOneZero");
-
                 break;
             case 2:
                 hasImprovement = this->swapOneOne(data, customers);
-                if (hasImprovement) printData(customers.feasibleTour, customers.notVisited, "swapOneOne");
                 break;
             case 3: 
                 hasImprovement = this->reinsertion(data, customers);
-                if (hasImprovement) printData(customers.feasibleTour, customers.notVisited, "reinsertion");
                 break;
             case 4: 
                 hasImprovement = this->twoOpt(data, customers);
-                if (hasImprovement) printData(customers.feasibleTour, customers.notVisited, "twoOpt");
             break;
         }
 
@@ -325,6 +322,7 @@ void IteratedLocalSearch::printData(Tour tour, vector<int> notVisited, string so
 
     outFile << "\nCost: " << tour.cost;
     outFile << "\nPrize: " << tour.prize;
+    outFile << "\n Funcao Objetivo: " << objcFunc(tour.prize, tour.cost);
     
 
     outFile.close(); // Fecha o arquivo corretamente

@@ -22,7 +22,6 @@ int main(int argc, char *argv[]) {
     InstanceData data = readFile(filename); 
     IteratedLocalSearch ils(MAX_NOT_IMPROVIMENT, K, C, seed);
     ils.run(data, K, C);
-    printData(ils.bestSolution.feasibleTour, ils.bestSolution.notVisited);
     
     return 0;
 }

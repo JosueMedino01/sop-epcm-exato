@@ -12,12 +12,13 @@ class IteratedLocalSearch
         double C;
         double objcFunc(double sumPrize, double sumCost);
         void printData(Tour tour, vector<int> notVisited, string source);
+
         bool shiftOneZero(InstanceData &data, Customers &customers);
         bool swapOneOne(InstanceData &data, Customers &customers);
         bool reinsertion(InstanceData &data, Customers &customers);
         bool twoOpt(InstanceData &data, Customers &customers);
-        void localSearch(InstanceData &data, Customers &customers);
         
+        void localSearch(InstanceData &data, Customers &customers);
         Customers doubleBridge(InstanceData &data, Customers customers);
     public:
         Customers bestSolution; 
