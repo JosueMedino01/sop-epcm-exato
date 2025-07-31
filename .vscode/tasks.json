@@ -6,7 +6,7 @@
             "type": "shell",
             "command": "g++",
             "args": [
-                "orienteering-problem-exact.cpp",
+                "sop-epcm.cpp",
                 "-std=c++11",
                 "-I/home/josue/CPLEX_Studio129/cplex/include",
                 "-I/home/josue/CPLEX_Studio129/concert/include",
