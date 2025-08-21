@@ -258,7 +258,7 @@ void solver(readInstances::DataOP &data) {
     prizeSum.end();
 
     /* Eliminação de Subciclos */
-    cplex.extract(POP_RC);
+    /* cplex.extract(POP_RC); */
     IloNum tol = cplex.getParam(IloCplex::EpInt);
     cplex.use(SubtourEliminationCallback(environment, Xij, tol));
 
