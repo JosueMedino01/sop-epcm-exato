@@ -9,12 +9,20 @@ using namespace std;
 
 const string PATH = "./instancias/quality/instances/berlin52FSTCII_q2_g4_p40_r20_s20_rs15.pop";
 const int startNode = 0;
-const int endNode = 14;
-const double minPrize = 6000;
+const int endNode = 9;
+const double minPrize = 1200;
+const double minProb = 0;
 
 readInstances::DataOP getInstance(string path) {
     return readInstances::readFile(path);
 }
+
+//vector<int> buildPathByMatriz(IloNumArray2 matriz, IloNum tol, int startNode);
+vector<int> buildPathFromSeen(IloNumArray2 Xij, IloNumArray seen, int startNode);
+double evaluate(int i, double Pmin, const vector<int> &path, 
+    const vector<double> &probabilities, const vector<int> &prizes);
+
+
 
 IloInt checkTour(IloNumArray2 Xij, IloNumArray seen, IloNum tol)
 {
@@ -42,10 +50,11 @@ IloInt checkTour(IloNumArray2 Xij, IloNumArray seen, IloNum tol)
             }
         }
 
-        if (next == -1) {
-            cout << "NOT CYCLE" << endl;
-            return n + 1;
+        if (next == -1 || seen[next] > 0) {
+            // caminho terminou ou bateu em nó já visitado
+            return length;
         }
+
 
         last = current;
         current = next;
@@ -55,7 +64,7 @@ IloInt checkTour(IloNumArray2 Xij, IloNumArray seen, IloNum tol)
 }
 
 
-ILOLAZYCONSTRAINTCALLBACK2(SubtourEliminationCallback, IloArray<IloIntVarArray>, Xij, IloNum, tol) {
+ILOLAZYCONSTRAINTCALLBACK4(SubtourEliminationCallback, IloArray<IloIntVarArray>, Xij, IloIntVarArray &, Yi, IloNum, tol, readInstances::DataOP&, data) {
     IloInt n = Xij.getSize();
     IloEnv env = getEnv();
     IloNumArray2 sol(env, n);
@@ -76,6 +85,31 @@ ILOLAZYCONSTRAINTCALLBACK2(SubtourEliminationCallback, IloArray<IloIntVarArray>,
 
     if(length >= n) 
     {
+        vector<int> path = buildPathFromSeen(sol, seen, startNode);
+        double prob = evaluate(path.size(), minPrize, path, data.probability, data.prize);
+        cout << "Probabilidade de sucesso: " << prob << endl;
+        cout << "Caminho: " << path.size() <<endl;
+
+        // if(prob < minProb) {
+        //     vector<int> S;
+        //     for (int i = 0; i < n; i++)
+        //     {
+        //         if(seen[i] > 0) {
+        //             S.push_back(i);
+        //         }
+        //     }
+
+        //     if(!S.empty()) {
+        //         IloExpr cut(env);
+        //         for (int i  : S) cut += Yi[i];
+        //         add((cut <= (int)S.size() - 1)).end();
+        //         cut.end();
+        //         cout << "Corte adicionado. Probabilidade: " << prob << endl;
+        //     }
+            
+        // }
+
+
         seen.end();
         for (int i = 0; i < n; i++)
         {
@@ -83,7 +117,7 @@ ILOLAZYCONSTRAINTCALLBACK2(SubtourEliminationCallback, IloArray<IloIntVarArray>,
         }
 
         sol.end();
-        cout << "NOT CYCLE" << endl;
+        
         return;
     }
 
@@ -113,6 +147,28 @@ ILOLAZYCONSTRAINTCALLBACK2(SubtourEliminationCallback, IloArray<IloIntVarArray>,
 }
 
 
+vector<int> buildPathFromSeen(IloNumArray2 Xij, IloNumArray seen, int startNode) {
+    vector<int> path;
+    int curr = startNode;
+
+    while (true) {
+        path.push_back(curr);
+        int next = -1;
+        for (int j = 0; j < Xij.getSize(); j++) {
+            if (Xij[curr][j] >= 1.0 - 1e-6 && seen[j] > 0 && j != curr) {
+                next = j;
+                break;
+            }
+        }
+        if (next == startNode || next == -1) {
+            // path.push_back(startNode);
+            break;
+        }
+        curr = next;
+    }
+
+    return path;
+}
 
 static std::map<std::pair<int, double>, double> hashMap;
 
@@ -214,40 +270,48 @@ void solver(readInstances::DataOP &data) {
 
     /* RESTRIÇÕES */
 
-    // Define o primeiro cliente a ser visitado
-    IloExpr edgeSumWithStartNode(environment);
-    for (int j = 0; j < n; j++)
-        if( startNode != j) edgeSumWithStartNode += Xij[startNode][j];
+    // CORRECTED CONSTRAINTS FOR PATH FROM startNode TO endNode
 
-    POP_RC.add(edgeSumWithStartNode == 1); edgeSumWithStartNode.end();
+// Start node constraints
+IloExpr startOut(environment);
+for (int j = 0; j < n; j++)
+    if(j != startNode) startOut += Xij[startNode][j];
+POP_RC.add(startOut == 1); // Exactly one outgoing edge from start
+POP_RC.add(Yi[startNode] == 1); // Start node is always visited
+startOut.end();
 
-    // Define o último cliente a ser visitado
-    IloExpr edgeSumWithEndNode(environment);
-    for (int i = 0; i < n; i++)
-        if(endNode != i) edgeSumWithEndNode += Xij[i][endNode];
-        
-    POP_RC.add(edgeSumWithEndNode == 1); edgeSumWithEndNode.end();
+// End node constraints  
+IloExpr endIn(environment);
+for (int i = 0; i < n; i++)
+    if(i != endNode) endIn += Xij[i][endNode];
+POP_RC.add(endIn == 1); // Exactly one incoming edge to end
+POP_RC.add(Yi[endNode] == 1); // End node is always visited
+endIn.end();
 
-    // Se sai aresta de i então i está na solução (Yi = 1)
-    for(int i = 0; i < n; i++)
-    {
+// Intermediate nodes (excluding start and end)
+for(int i = 0; i < n; i++)
+{
+    if(i != startNode && i != endNode) {
         IloExpr edgeOutI(environment);
-        IloExpr edgeOutJ(environment);
-
+        IloExpr edgeInI(environment);
+        
         for (int j = 0; j < n; j++)
         {
             if(i != j) {
                 edgeOutI += Xij[i][j];
-                edgeOutJ += Xij[j][i];
+                edgeInI += Xij[j][i];
             }
         }
-
+        
+        // If visited, must have exactly 1 in and 1 out edge
         POP_RC.add(edgeOutI == Yi[i]);
-        POP_RC.add(edgeOutJ == Yi[i]);
-
+        POP_RC.add(edgeInI == Yi[i]);
+        // Flow conservation is automatically satisfied since both equal Yi[i]
+        
         edgeOutI.end();
-        edgeOutJ.end();
+        edgeInI.end();
     }
+}
 
     // Premiação mínima
     IloExpr prizeSum(environment);
@@ -260,14 +324,16 @@ void solver(readInstances::DataOP &data) {
     /* Eliminação de Subciclos */
     /* cplex.extract(POP_RC); */
     IloNum tol = cplex.getParam(IloCplex::EpInt);
-    cplex.use(SubtourEliminationCallback(environment, Xij, tol));
+    cplex.use(SubtourEliminationCallback(environment, Xij, Yi, tol, data));
 
     cplex.solve();
     writeResponse(data, cplex, Xij, Yi);
 }
 
 int main() {
+    
     readInstances::DataOP data = getInstance(PATH);
     solver(data);
     return 0;
 }
+

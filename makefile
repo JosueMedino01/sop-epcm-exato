@@ -1,26 +1,43 @@
-
-
 # Target to compile CPLEX
 run:
-	g++ sop-epcm.cpp -std=c++11 \
-	-I/home/josue/CPLEX_Studio129/cplex/include \
-	-I/home/josue/CPLEX_Studio129/concert/include \
-	-L/home/josue/CPLEX_Studio129/cplex/lib/x86-64_linux/static_pic \
-	-L/home/josue/CPLEX_Studio129/concert/lib/x86-64_linux/static_pic \
+	arch -x86_64 g++ sop-epcm.cpp -std=c++11 \
+	-I/Applications/CPLEX_Studio129/cplex/include \
+	-I/Applications/CPLEX_Studio129/concert/include \
+	-L/Applications/CPLEX_Studio129/cplex/lib/x86-64_osx/static_pic \
+	-L/Applications/CPLEX_Studio129/concert/lib/x86-64_osx/static_pic \
 	-DIL_STD -lilocplex -lconcert -lcplex -lm -o a.out
 	./a.out
 	rm -f *.o a.out
+
+app:
+	arch -x86_64 g++ app.cpp -std=c++11 \
+	-I/Applications/CPLEX_Studio129/cplex/include \
+	-I/Applications/CPLEX_Studio129/concert/include \
+	-L/Applications/CPLEX_Studio129/cplex/lib/x86-64_osx/static_pic \
+	-L/Applications/CPLEX_Studio129/concert/lib/x86-64_osx/static_pic \
+	-DIL_STD -lilocplex -lconcert -lcplex -lm -o app.out
+	./app.out ./instancias/quality/instances/berlin52FSTCII_q2_g4_p40_r20_s20_rs15.pop 0 9 1200 0.0
+	rm -f *.o app.out
+
+bug:
+	arch -x86_64 g++ sop-epcm.cpp -std=c++11 \
+	-I/Applications/CPLEX_Studio129/cplex/include \
+	-I/Applications/CPLEX_Studio129/concert/include \
+	-L/Applications/CPLEX_Studio129/cplex/lib/x86-64_osx/static_pic \
+	-L/Applications/CPLEX_Studio129/concert/lib/x86-64_osx/static_pic \
+	-DIL_STD -lilocplex -lconcert -lcplex -lm  -g -o a.out
+
+
 
 tsp:
 	g++ tsp.cpp -std=c++11 \
-	-I/home/josue/CPLEX_Studio129/cplex/include \
-	-I/home/josue/CPLEX_Studio129/concert/include \
-	-L/home/josue/CPLEX_Studio129/cplex/lib/x86-64_linux/static_pic \
-	-L/home/josue/CPLEX_Studio129/concert/lib/x86-64_linux/static_pic \
+	-I/Applications/CPLEX_Studio129/cplex/include \
+	-I/Applications/CPLEX_Studio129/concert/include \
+	-L/Applications/CPLEX_Studio129/cplex/lib/x86-64_osx/static_pic\
+	-L/Applications/CPLEX_Studio129/concert/lib/x86-64_osx/static_pic\
 	-DIL_STD -lilocplex -lconcert -lcplex -lm -o a.out
 	./a.out
 	rm -f *.o a.out
-
 
 	
 clean:

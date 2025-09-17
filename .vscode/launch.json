@@ -9,7 +9,7 @@
         "type": "cppdbg",
         "request": "launch",
         "program": "${workspaceFolder}/a.out",
-        "args": ["-f", "./instancias/quality/instances/berlin52FSTCII_q2_g4_p40_r20_s20_rs15.pop", "-C", "0.001", "-K", "2", "-T", "50", "-maxNotImproviment", "1000", "-maxIterTabu", "500", "-seed", "13"],
+        "args": [],
         "stopAtEntry": true,
         "cwd": "${fileDirname}",
         "environment": [],
