@@ -16,7 +16,7 @@ app:
 	-L/Applications/CPLEX_Studio129/cplex/lib/x86-64_osx/static_pic \
 	-L/Applications/CPLEX_Studio129/concert/lib/x86-64_osx/static_pic \
 	-DIL_STD -lilocplex -lconcert -lcplex -lm -o app.out
-	./app.out ./instancias/quality/instances/berlin52FSTCII_q2_g4_p40_r20_s20_rs15.pop 0 0 3500 0.7
+	./app.out ./instancias/adapted/berlin52FSTCII_q2_g4_p05_r40_s40_rs30.pop 0 0 2000 0.65
 	rm -f *.o app.out
 
 bug:
