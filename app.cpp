@@ -80,9 +80,13 @@
 
         const int activedNodeValue = path.size() - 1;
         cout << "DEBUG - path: ";
+        double cost = 0.0;
         for(int i = 0; i < path.size(); i++) {
             cout << path[i] << " ";
+            if(i < path.size() -1)
+                cost += data.cost[path[i]][path[i+1]];
         }
+        cout << " | Cost: " << cost;
         cout << endl;
         cout << "path.size(): " << path.size() << endl;
         cout << "edgeCount: " << edgeCount << endl; 
@@ -98,7 +102,7 @@
             {
                 //cout <<  "add prob cut" << endl;
                 IloExpr probCut(env);
-                for (int k = 0; k < path.size() ; k++)
+                for (int k = 0; k < path.size() - 1; k++)
                 {
                     int i = path[k];
                     int j = path[k + 1];
@@ -119,7 +123,7 @@
             cout <<  "add subcicle tour" << endl;
 
             IloExpr subtour(env);
-            for (int k = 0; k < path.size() ; k++)
+            for (int k = 0; k < path.size() - 1; k++)
             {
                 // k = 0, 1, 2
                 int i = path[k];
@@ -182,6 +186,7 @@
 
             auto [_, path] = buildSubTourByStartnode(sol, 0.5, START_NODE);
             cout << "SUM PROB: " << evaluate(data.nCustomers, MIN_PRIZE, vector<int>{0}, data.probability, data.prize) << endl;
+            cout << "CPLEX GAP: " << cplex.getMIPRelativeGap() << endl;
         }
         else 
         {
@@ -222,6 +227,7 @@
         IloModel model(environment, "Problema de Orientação Probabilístico com Premiação e Probabilidade Mínima");
         IloCplex cplex(model);
         IloNum tol = cplex.getParam(IloCplex::EpInt);
+        cplex.setParam(IloCplex::Param::TimeLimit, 10);
 
         const int n = data.nCustomers;
 
