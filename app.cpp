@@ -1,5 +1,9 @@
     #include <ilcplex/ilocplex.h>
     #include <iostream>
+    #include <fstream>
+    #include <sstream>
+    #include <chrono>
+    #include <ctime>
     #include "readInstances.h"
     #include <stack>
     #include <map>
@@ -9,16 +13,23 @@
 
     int START_NODE, END_NODE;
     double MIN_PRIZE, MIN_PROB;
+    int TIME_LIMIT; // em segundos
     string PATH;
+    string LOG_FILE;
 
     static std::map<std::pair<int, double>, double> hashMap;
+    static std::ofstream logFileStream;
 
     /**
      * Responsável por modelar o problema e chamar o solver do CPLEX.
      * Após resolver o modelo, chama a função que escreve a resposta.
      */
-    void solve(readInstances::DataOP &data, int startNode, int endNode, double minPrize, double minProb);
+    void solve(readInstances::DataOP &data, int startNode, int endNode, double minPrize, double minProb, int timeLimit);
 
+    /**
+     * Escreve uma mensagem no log file e no console
+     */
+    void writeLog(const string &message);
 
     /**
      * Responsável por calcular a probabilidade de sucesso de um dado caminho.
@@ -51,6 +62,14 @@
 
     pair<int, vector<int>> buildSubTourByStartnode(IloNumArray2 &adj, IloNum tol, int startNode);
 
+    /**
+     * Função auxiliar para escrever logs
+     */
+    void writeLog(const string &message) {
+        logFileStream << message << endl;
+        logFileStream.flush();
+        cout << message << endl;
+    }
 
     /**
      * Adiciona restricoes de subciclo caso tenha um ciclo inválido. 
@@ -79,28 +98,37 @@
         auto [edgeCount, path] = buildSubTourByStartnode(sol, tol, 0);
 
         const int activedNodeValue = path.size() - 1;
-        cout << "DEBUG - path: ";
+        stringstream ss;
+        ss << "DEBUG - path: ";
         double cost = 0.0;
         for(int i = 0; i < path.size(); i++) {
-            cout << path[i] << " ";
+            ss << path[i] << " ";
             if(i < path.size() -1)
                 cost += data.cost[path[i]][path[i+1]];
         }
-        cout << " | Cost: " << cost;
-        cout << endl;
-        cout << "path.size(): " << path.size() << endl;
-        cout << "edgeCount: " << edgeCount << endl; 
-        cout << "activedNodeValue: " << activedNodeValue << endl;
+        ss << " | Cost: " << cost;
+        writeLog(ss.str());
+        stringstream ss2;
+        ss2 << "path.size(): " << path.size();
+        writeLog(ss2.str());
+        stringstream ss3;
+        ss3 << "edgeCount: " << edgeCount;
+        writeLog(ss3.str());
+        stringstream ss4;
+        ss4 << "activedNodeValue: " << activedNodeValue;
+        writeLog(ss4.str());
         if(activedNodeValue == edgeCount)
         {
-            cout <<  "verify prob tour" << endl;
+            writeLog("verify prob tour");
             const double alfa = evaluate(path.size(), MIN_PRIZE, path, data.probability, data.prize);
-            cout << "Prob: " << alfa << endl;
+            stringstream ss5;
+            ss5 << "Prob: " << alfa;
+            writeLog(ss5.str());
 
 
             if(alfa < MIN_PROB) 
             {
-                //cout <<  "add prob cut" << endl;
+                //writeLog("add prob cut");
                 IloExpr probCut(env);
                 for (int k = 0; k < path.size() - 1; k++)
                 {
@@ -120,7 +148,7 @@
         }
         else 
         {
-            cout <<  "add subcicle tour" << endl;
+            writeLog("add subcicle tour");
 
             IloExpr subtour(env);
             for (int k = 0; k < path.size() - 1; k++)
@@ -147,26 +175,35 @@
         if(hasResult) 
         {
             const int objectiveFuncValue = cplex.getObjValue();
-            cout << "Obj Fun: " << objectiveFuncValue << endl; 
-            cout << "Arestas (i, j) ativadas:" << endl;
+            stringstream ss;
+            ss << "Obj Fun: " << objectiveFuncValue;
+            writeLog(ss.str());
+            writeLog("Arestas (i, j) ativadas:");
             for (int i = 0; i < data.nCustomers; i++) {
                 for (int j = 0; j < data.nCustomers; j++) {
                     if (i != j && cplex.getValue(Xij[i][j]) > 0) {
-                        cout << "(" << i  << ", " << j << ")" << endl;
+                        stringstream ss2;
+                        ss2 << "(" << i  << ", " << j << ")";
+                        writeLog(ss2.str());
                     }
                 }   
             }
-            cout << endl;
 
             double sumPrizes = 0;
+            stringstream ss3;
+            ss3 << "Nós visitados com seus Yi valores:";
+            writeLog(ss3.str());
             for (int i = 0; i < data.nCustomers; i++) {
                 if(cplex.getValue(Yi[i]) >= 1) {
                     sumPrizes += data.prize[i];
-                    cout << i << ": " << cplex.getValue(Yi[i]) << endl;
+                    stringstream ss4;
+                    ss4 << i << ": " << cplex.getValue(Yi[i]);
+                    writeLog(ss4.str());
                 } 
             }
-            cout << endl;
-            cout << "SUM PRIZE: " << sumPrizes << endl;
+            stringstream ss5;
+            ss5 << "SUM PRIZE: " << sumPrizes;
+            writeLog(ss5.str());
 
             int n = data.nCustomers;
             IloNumArray2 sol(cplex.getEnv(), n);
@@ -177,30 +214,40 @@
                 for (int j = 0; j < n; j++) {
                     if(i != j){
                         sol[i][j] = cplex.getValue(Xij[i][j]);
-                        // if(sol[i][j] > 0.5)
-                        //     cout << i << "->" << j << ": " << sol[i][j] << " | ";
                     }
                 }
-                // cout << endl;
             }
 
             auto [_, path] = buildSubTourByStartnode(sol, 0.5, START_NODE);
-            cout << "SUM PROB: " << evaluate(data.nCustomers, MIN_PRIZE, vector<int>{0}, data.probability, data.prize) << endl;
-            cout << "CPLEX GAP: " << cplex.getMIPRelativeGap() << endl;
+            stringstream ss6;
+            ss6 << "Caminho: ";
+            for (int node : path) {
+                ss6 << node << " ";
+            }
+            writeLog(ss6.str());
+            
+            double successProb = evaluate(path.size(), MIN_PRIZE, path, data.probability, data.prize);
+            stringstream ss7;
+            ss7 << "SUM PROB: " << successProb;
+            writeLog(ss7.str());
+            stringstream ss8;
+            ss8 << "CPLEX GAP: " << cplex.getMIPRelativeGap();
+            writeLog(ss8.str());
         }
         else 
         {
-            cout << "Nao foi possivel encontrar uma solucao." << endl;
+            writeLog("Nao foi possivel encontrar uma solucao.");
         }
     }
 
     int main(int argc, char* argv[]) {
-        if (argc < 6) {
+        if (argc < 7) {
             cerr << "Uso: " << argv[0] 
-                << " <PATH> <startNode> <endNode> <minPrize> <minProb>" << endl;
+                << " <PATH> <startNode> <endNode> <minPrize> <minProb> <timeLimit>" << endl;
             cerr << "Exemplo: " << argv[0] 
-                << " ./instancias/quality/instances/berlin52FSTCII_q2_g4_p40_r20_s20_rs15.pop 0 9 1200 0.0" 
+                << " ./instancias/quality/instances/berlin52FSTCII_q2_g4_p40_r20_s20_rs15.pop 0 9 1200 0.0 1800" 
                 << endl;
+            cerr << "timeLimit em segundos (ex: 1800 para 30 minutos)" << endl;
             return 1;
         }
 
@@ -209,25 +256,57 @@
         END_NODE   = atoi(argv[3]);
         MIN_PRIZE  = atof(argv[4]);
         MIN_PROB   = atof(argv[5]);
+        TIME_LIMIT = atoi(argv[6]);
 
-        cout << "Arquivo: " << PATH << endl;
-        cout << "StartNode: " << START_NODE << "  EndNode: " << END_NODE << endl;
-        cout << "MinPrize: " << MIN_PRIZE << "  MinProb: " << MIN_PROB << endl;
+        // Criar arquivo de log com timestamp
+        time_t now = time(nullptr);
+        tm* timeinfo = localtime(&now);
+        char buffer[100];
+        strftime(buffer, sizeof(buffer), "log_%Y%m%d_%H%M%S.txt", timeinfo);
+        LOG_FILE = string(buffer);
+        
+        logFileStream.open(LOG_FILE, ios::app);
+        if (!logFileStream.is_open()) {
+            cerr << "Erro ao abrir arquivo de log: " << LOG_FILE << endl;
+            return 1;
+        }
+
+        writeLog("========================================");
+        writeLog("Iniciando execução do algoritmo SOP-EPCM");
+        writeLog("========================================");
+        stringstream ss;
+        ss << "Arquivo: " << PATH;
+        writeLog(ss.str());
+        stringstream ss2;
+        ss2 << "StartNode: " << START_NODE << "  EndNode: " << END_NODE;
+        writeLog(ss2.str());
+        stringstream ss3;
+        ss3 << "MinPrize: " << MIN_PRIZE << "  MinProb: " << MIN_PROB;
+        writeLog(ss3.str());
+        stringstream ss4;
+        ss4 << "Time Limit: " << TIME_LIMIT << " segundos (" << (TIME_LIMIT / 60.0) << " minutos)";
+        writeLog(ss4.str());
+        writeLog("========================================");
 
         readInstances::DataOP data = readInstances::readFile(PATH);
 
-        solve(data, START_NODE, END_NODE, MIN_PRIZE, MIN_PROB);
+        solve(data, START_NODE, END_NODE, MIN_PRIZE, MIN_PROB, TIME_LIMIT);
+
+        logFileStream.close();
+        cout << "Logs salvos em: " << LOG_FILE << endl;
 
         return 0;
     };
 
 
-    void solve(readInstances::DataOP &data, int startNode, int endNode, double minPrize, double minProb) {
+    void solve(readInstances::DataOP &data, int startNode, int endNode, double minPrize, double minProb, int timeLimit) {
         IloEnv environment;
         IloModel model(environment, "Problema de Orientação Probabilístico com Premiação e Probabilidade Mínima");
         IloCplex cplex(model);
         IloNum tol = cplex.getParam(IloCplex::EpInt);
-        cplex.setParam(IloCplex::Param::TimeLimit, 10);
+        
+        // Configurar tempo limite em segundos
+        cplex.setParam(IloCplex::Param::TimeLimit, timeLimit);
 
         const int n = data.nCustomers;
 
