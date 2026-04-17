@@ -17,10 +17,10 @@
     string PATH;
     string LOG_FILE;
 
-    static std::map<std::pair<int, double>, double> hashMap;
+    static std::map<std::pair<int, int>, double> hashMap;
     static std::ofstream logFileStream;
 
-    /**
+    /**{"type":"excalidraw/clipboard","elements":[{"id":"ZJnSc9vg","type":"text","x":-691.052734375,"y":-310.439453125,"width":45.679962158203125,"height":25,"angle":0,"strokeColor":"#1e1e1e","backgroundColor":"transparent","fillStyle":"solid","strokeWidth":2,"strokeStyle":"solid","roughness":1,"opacity":100,"groupIds":[],"frameId":null,"index":"a3","roundness":null,"seed":1586347327,"version":50,"versionNonce":1035820017,"isDeleted":false,"boundElements":null,"updated":1775493739786,"link":null,"locked":false,"text":"Heur.","rawText":"Heur.","fontSize":20,"fontFamily":5,"textAlign":"left","verticalAlign":"top","containerId":null,"originalText":"Heur.","autoResize":true,"lineHeight":1.25}],"files":{}}
      * Responsável por modelar o problema e chamar o solver do CPLEX.
      * Após resolver o modelo, chama a função que escreve a resposta.
      */
@@ -35,7 +35,7 @@
      * Responsável por calcular a probabilidade de sucesso de um dado caminho.
      * Utiliza programação dinâmica com memoization para evitar cálculos repetidos.
      */
-    double evaluate(int i, double Pmin, const vector<int> &path, 
+    double evaluate(int i, int Pmin, const vector<int> &path, 
         const vector<double> &probabilities, const vector<int> &prizes);
 
 
@@ -68,7 +68,7 @@
     void writeLog(const string &message) {
         logFileStream << message << endl;
         logFileStream.flush();
-        cout << message << endl;
+        // cout << message << endl;
     }
 
     /**
@@ -120,7 +120,8 @@
         if(activedNodeValue == edgeCount)
         {
             writeLog("verify prob tour");
-            const double alfa = evaluate(path.size(), MIN_PRIZE, path, data.probability, data.prize);
+            hashMap.clear();
+            const double alfa = evaluate(path.size() - 1, MIN_PRIZE, path, data.probability, data.prize);
             stringstream ss5;
             ss5 << "Prob: " << alfa;
             writeLog(ss5.str());
@@ -174,7 +175,7 @@
 
         if(hasResult) 
         {
-            const int objectiveFuncValue = cplex.getObjValue();
+            const double objectiveFuncValue = cplex.getObjValue();
             stringstream ss;
             ss << "Obj Fun: " << objectiveFuncValue;
             writeLog(ss.str());
@@ -226,7 +227,7 @@
             }
             writeLog(ss6.str());
             
-            double successProb = evaluate(path.size(), MIN_PRIZE, path, data.probability, data.prize);
+            double successProb = evaluate(path.size() - 1, MIN_PRIZE, path, data.probability, data.prize);
             stringstream ss7;
             ss7 << "SUM PROB: " << successProb;
             writeLog(ss7.str());
@@ -306,8 +307,9 @@
         IloNum tol = cplex.getParam(IloCplex::EpInt);
         
         // Configurar tempo limite em segundos
+        cout << 'time limit: ' << timeLimit << endl;
         cplex.setParam(IloCplex::Param::TimeLimit, timeLimit);
-
+        
         const int n = data.nCustomers;
 
         // Definição das variáveis de decisão
@@ -394,7 +396,7 @@
         }
     }
 
-    double evaluate(int i, double Pmin, const vector<int> &path, 
+    double evaluate(int i, int Pmin, const vector<int> &path, 
         const vector<double> &probabilities, const vector<int> &prizes) 
     {
         if (Pmin <= 0) 

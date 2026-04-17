@@ -16,7 +16,7 @@ app:
 	-L/Applications/CPLEX_Studio129/cplex/lib/x86-64_osx/static_pic \
 	-L/Applications/CPLEX_Studio129/concert/lib/x86-64_osx/static_pic \
 	-DIL_STD -lilocplex -lconcert -lcplex -lm -o app.out
-	./app.out Artificial_POP_Instance_03.txt 0 0 3000 0.6 1800
+	./app.out instances/Artificial_POP_Instance_01.txt 0 0 3000 0.5 1800 > CPLEX_LOG/Artificial_POP_Instance_01.3000.05.1800.txt
 	rm -f *.o app.out
 
 bug:
@@ -54,3 +54,8 @@ heuristic:
 
 heuristic-bug:
 	g++ orienteering-problem-heuristic.cpp -g -o a.out
+
+trouble: 
+	g++ -std=c++11 calc_path_cost.cpp -o calc_path_cost.out
+	./calc_path_cost.out Artificial_POP_Instance_04.txt "0 12 21 41 16 43 51 45 2 0"
+
