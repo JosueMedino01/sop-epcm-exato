@@ -12,10 +12,11 @@
     using namespace std;
 
     int START_NODE, END_NODE;
-    double MIN_PRIZE, MIN_PROB;
+    int MIN_PRIZE;
+    double MIN_PROB;
     int TIME_LIMIT; // em segundos
     string PATH;
-    string LOG_FILE;
+    string OUTPUT;
 
     static std::map<std::pair<int, int>, double> hashMap;
     static std::ofstream logFileStream;
@@ -227,12 +228,16 @@
             }
             writeLog(ss6.str());
             
+            hashMap.clear();
             double successProb = evaluate(path.size() - 1, MIN_PRIZE, path, data.probability, data.prize);
             stringstream ss7;
             ss7 << "SUM PROB: " << successProb;
             writeLog(ss7.str());
             stringstream ss8;
             ss8 << "CPLEX GAP: " << cplex.getMIPRelativeGap();
+
+            stringstream ss9;
+            ss8 << "CPLEX STATUS: " << cplex.getStatus();
             writeLog(ss8.str());
         }
         else 
@@ -252,23 +257,23 @@
             return 1;
         }
 
-        PATH      = argv[1];
-        START_NODE = atoi(argv[2]);
-        END_NODE   = atoi(argv[3]);
-        MIN_PRIZE  = atof(argv[4]);
-        MIN_PROB   = atof(argv[5]);
-        TIME_LIMIT = atoi(argv[6]);
+        PATH = argv[1];
+        readInstances::DataOP data = readInstances::readFile(PATH);
 
-        // Criar arquivo de log com timestamp
-        time_t now = time(nullptr);
-        tm* timeinfo = localtime(&now);
-        char buffer[100];
-        strftime(buffer, sizeof(buffer), "log_%Y%m%d_%H%M%S.txt", timeinfo);
-        LOG_FILE = string(buffer);
+        START_NODE = atoi(argv[2]);
+        END_NODE = atoi(argv[3]);
+ 
+        MIN_PRIZE = (atof(argv[4]) < 0) ? data.MIN_PRIZE : atof(argv[4]);
+        MIN_PROB = (atof(argv[5]) < 0) ? data.MIN_PROB : atof(argv[5]);
+
+        TIME_LIMIT = atoi(argv[6]);
+        OUTPUT = argv[7];
         
-        logFileStream.open(LOG_FILE, ios::app);
+       
+
+        logFileStream.open(OUTPUT, ios::app);
         if (!logFileStream.is_open()) {
-            cerr << "Erro ao abrir arquivo de log: " << LOG_FILE << endl;
+            cerr << "Erro ao abrir arquivo de log: " << OUTPUT << endl;
             return 1;
         }
 
@@ -289,12 +294,12 @@
         writeLog(ss4.str());
         writeLog("========================================");
 
-        readInstances::DataOP data = readInstances::readFile(PATH);
+        
 
         solve(data, START_NODE, END_NODE, MIN_PRIZE, MIN_PROB, TIME_LIMIT);
 
         logFileStream.close();
-        cout << "Logs salvos em: " << LOG_FILE << endl;
+        cout << "Logs salvos em: " << OUTPUT << endl;
 
         return 0;
     };

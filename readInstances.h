@@ -15,6 +15,8 @@ namespace readInstances {
         vector<vector<double>> cost;
         int deadline;
         vector<double> probability;
+        int MIN_PRIZE;
+        double MIN_PROB;
     };
 
     double getCost(int x1, int y1, int x2, int y2) {
@@ -83,6 +85,14 @@ namespace readInstances {
                     data.probability[i] = prob;
                     data.prize[i] = prize;
                 }
+            }
+            else if (key == "MIN_PRIZE") {
+                data.MIN_PRIZE = value;
+            }
+            else if (key == "MIN_PROB") {
+                double probValue;
+                iss >> probValue;
+                data.MIN_PROB = probValue;
             }
         }
 

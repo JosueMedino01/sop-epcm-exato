@@ -1,22 +1,15 @@
-# Target to compile CPLEX
-run:
-	arch -x86_64 g++ sop-epcm.cpp -std=c++11 \
-	-I/Applications/CPLEX_Studio129/cplex/include \
-	-I/Applications/CPLEX_Studio129/concert/include \
-	-L/Applications/CPLEX_Studio129/cplex/lib/x86-64_osx/static_pic \
-	-L/Applications/CPLEX_Studio129/concert/lib/x86-64_osx/static_pic \
-	-DIL_STD -lilocplex -lconcert -lcplex -lm -o a.out
-	./a.out
-	rm -f *.o a.out
-
-app:
+compile:
 	arch -x86_64 g++ app.cpp -std=c++11 \
 	-I/Applications/CPLEX_Studio129/cplex/include \
 	-I/Applications/CPLEX_Studio129/concert/include \
 	-L/Applications/CPLEX_Studio129/cplex/lib/x86-64_osx/static_pic \
 	-L/Applications/CPLEX_Studio129/concert/lib/x86-64_osx/static_pic \
 	-DIL_STD -lilocplex -lconcert -lcplex -lm -o app.out
-	./app.out instances/Artificial_POP_Instance_01.txt 0 0 3000 0.5 1800 > CPLEX_LOG/Artificial_POP_Instance_01.3000.05.1800.txt
+	
+run:
+	./app.out instances/large/large_56_1.txt 0 0 3000 0.5 1800 > CPLEX_LOG/large_56_1.3000.05.1800.txt
+
+clear:
 	rm -f *.o app.out
 
 bug:
@@ -59,3 +52,5 @@ trouble:
 	g++ -std=c++11 calc_path_cost.cpp -o calc_path_cost.out
 	./calc_path_cost.out Artificial_POP_Instance_04.txt "0 12 21 41 16 43 51 45 2 0"
 
+compile-generate: 
+	g++ -std=c++11 generate.cpp -o generate.out
